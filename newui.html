@@ -82,7 +82,7 @@ window.onpointerup=e=>{drag=false;launcher.releasePointerCapture(e.pointerId)}
 const overlay=document.getElementById('overlay');launcher.onclick=()=>{if(!drag)overlay.style.display='flex'};document.getElementById('closeBtn').onclick=()=>overlay.style.display='none';overlay.onclick=e=>{if(e.target===overlay)overlay.style.display='none'}
 function openInBg(url){document.getElementById('bgFrame').src=url}
 document.getElementById('joinBtn').onclick=()=>{openInBg('https://telegram.me/apkmodderkings');toast('Opening Telegram...')}
-document.getElementById('buyBtn').onclick=()=>{openInBg('https://apkkingbroo.github.io/paid/panel.html');toast('Opening Buy Page...')}
+document.getElementById('buyBtn').onclick=()=>{openInBg('https://telegram.me/Turbomsgbot');toast('Opening Buy Page...')}
 const modal=document.getElementById('modalBackdrop');
 document.querySelector('.header').oncontextmenu=e=>{e.preventDefault();modal.style.display='flex'}
 document.getElementById('verifyKeyBtn').onclick=()=>{const k=document.getElementById('keyInput').value.trim(),m=document.getElementById('verifyMsg');if(k==='duggia800'){m.style.display='block';m.style.color='#0f0';m.textContent='Activated';toast('Activated');setTimeout(()=>{modal.style.display='none';openInBg('https://apkkingbroo.github.io/paid/panel.html')},700)}else{m.style.display='block';m.style.color='#f33';m.textContent='Invalid Key';toast('Invalid Key')}}
