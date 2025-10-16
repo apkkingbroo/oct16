@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BDGWIN Panel</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:Inter,system-ui,sans-serif;overflow:hidden}
+iframe.bg{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0}
+.launcher{position:fixed;bottom:20px;right:20px;z-index:1000;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#00f0ff,#006eff);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.6);border:0}
+.launcher i{color:#000;font-size:22px}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:2000}
+.dialog{width:340px;max-width:90vw;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);backdrop-filter:blur(4px);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.8);padding:16px;animation:float 3s ease-in-out infinite alternate}
+@keyframes float{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.header h2{font-size:16px;color:#00f0ff}
+.close{background:transparent;border:0;color:#aaa;font-size:18px;cursor:pointer}
+.timer-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#ccc;margin-bottom:10px}
+.prediction{display:flex;flex-direction:column;align-items:center;justify-content:center;margin:10px 0;padding:20px;border-radius:12px;background:#111;border:1px solid rgba(255,255,255,0.1);position:relative;overflow:hidden}
+.prediction span{font-weight:900;font-size:28px;animation:fade 1.2s ease-in-out}
+@keyframes fade{0%{opacity:0;transform:scale(0.8)}100%{opacity:1;transform:scale(1)}}
+.prediction .glow{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(0,240,255,0.15),transparent 70%);animation:pulse 2s infinite alternate}
+@keyframes pulse{from{opacity:.3}to{opacity:.8}}
+.stats{display:flex;gap:10px;margin:10px 0}
+.stat{flex:1;text-align:center;background:#0b0b0b;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.05)}
+.stat .num{font-weight:800;font-size:18px;color:#00f0ff}
+.buttons{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;padding:10px;border-radius:10px;border:0;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.join{background:#0088cc;color:#fff}
+.buy{background:#00f0ff;color:#000}
+.history{margin-top:10px;max-height:120px;overflow:auto;padding-right:4px}
+.h-item{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin-bottom:6px;background:#0a0a0a;border-radius:8px;border:1px solid rgba(255,255,255,0.05);font-size:13px}
+.toast{position:fixed;left:50%;bottom:12%;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:6px;opacity:0;transition:.3s;z-index:3000}
+.toast.show{opacity:1}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:4000}
+.modal{width:90%;max-width:360px;background:#111;border-radius:10px;padding:14px}
+.modal input{width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:#000;color:#fff;margin-top:8px}
+.modal button{width:100%;padding:10px;border-radius:8px;border:0;background:#00f0ff;color:#000;font-weight:700;margin-top:10px}
+</style>
+</head>
+<body>
+<iframe class="bg" id="bgFrame" src="https://bdgwina.top//#/register?invitationCode=372171400520"></iframe>
+<button class="launcher" id="launcher"><i class="fa-solid fa-bolt"></i></button>
+<div class="overlay" id="overlay">
+  <div class="dialog">
+    <div class="header">
+      <h2>PREDICTION</h2>
+      <button class="close" id="closeBtn">&times;</button>
+    </div>
+    <div class="timer-row"><span id="currentPeriod">Period: —</span><span id="timer">00:00</span></div>
+    <div class="prediction">
+      <div class="glow"></div>
+      <span id="prediction">—</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="online">0</div><div>Online</div></div>
+      <div class="stat"><div class="num" id="streak">0</div><div>Streak</div></div>
+    </div>
+    <div class="buttons">
+      <button class="btn join" id="joinBtn"><i class="fab fa-telegram-plane"></i>Join</button>
+      <button class="btn buy" id="buyBtn"><i class="fa-solid fa-cart-shopping"></i>Buy</button>
+    </div>
+    <div class="history" id="history"></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Activate Premium</h3>
+    <input id="keyInput" placeholder="Enter Key">
+    <button id="verifyKeyBtn">Verify</button>
+    <div id="verifyMsg" style="margin-top:8px;text-align:center;font-weight:700;display:none"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const launcher=document.getElementById('launcher');let drag=false,ox=0,oy=0;
+launcher.onpointerdown=e=>{drag=true;const r=launcher.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;launcher.setPointerCapture(e.pointerId)}
+window.onpointermove=e=>{if(!drag)return;let x=e.clientX-ox,y=e.clientY-oy;x=Math.max(6,Math.min(window.innerWidth-launcher.offsetWidth-6,x));y=Math.max(6,Math.min(window.innerHeight-launcher.offsetHeight-6,y));launcher.style.left=x+'px';launcher.style.top=y+'px';launcher.style.right='auto';launcher.style.bottom='auto'}
+window.onpointerup=e=>{drag=false;launcher.releasePointerCapture(e.pointerId)}
+const overlay=document.getElementById('overlay');launcher.onclick=()=>{if(!drag)overlay.style.display='flex'};document.getElementById('closeBtn').onclick=()=>overlay.style.display='none';overlay.onclick=e=>{if(e.target===overlay)overlay.style.display='none'}
+function openInBg(url){document.getElementById('bgFrame').src=url}
+document.getElementById('joinBtn').onclick=()=>{openInBg('https://telegram.me/apkmodderkings');toast('Opening Telegram...')}
+document.getElementById('buyBtn').onclick=()=>{openInBg('https://apkkingbroo.github.io/paid/panel.html');toast('Opening Buy Page...')}
+const modal=document.getElementById('modalBackdrop');
+document.querySelector('.header').oncontextmenu=e=>{e.preventDefault();modal.style.display='flex'}
+document.getElementById('verifyKeyBtn').onclick=()=>{const k=document.getElementById('keyInput').value.trim(),m=document.getElementById('verifyMsg');if(k==='duggia800'){m.style.display='block';m.style.color='#0f0';m.textContent='Activated';toast('Activated');setTimeout(()=>{modal.style.display='none';openInBg('https://apkkingbroo.github.io/paid/panel.html')},700)}else{m.style.display='block';m.style.color='#f33';m.textContent='Invalid Key';toast('Invalid Key')}}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1400)}
+let historyData=[],last='',current='',wins=0,loss=0,streak=0;function pad(n){return String(n).padStart(2,'0')}
+function updateTimer(){const d=new Date(),s=d.getSeconds(),r=60-s,m=d.getMinutes(),total=d.getHours()*60+m,y=d.getFullYear(),mo=pad(d.getMonth()+1),da=pad(d.getDate()),p=10001+total-330;current=`${y}${mo}${da}1000${p}`;document.getElementById('currentPeriod').textContent='Period: '+current;document.getElementById('timer').textContent='00:'+pad(r)}
+updateTimer();setInterval(updateTimer,1000)
+async function fetchResult(){await new Promise(r=>setTimeout(r,200));const v=Math.floor(Math.random()*10);return{period:current,result:v,type:v>=5?'BIG':'SMALL'}}
+function predictLogic(h){if(h.length<5)return Math.random()<0.5?'BIG':'SMALL';let b=0,s=0;h.slice(0,10).forEach(x=>x.type==='BIG'?b++:s++);return b>s?'SMALL':'BIG'}
+function render(){const el=document.getElementById('history');el.innerHTML='';historyData.slice(0,8).forEach(h=>{const d=document.createElement('div');d.className='h-item';d.innerHTML=`<div>${h.period}</div><div>${h.result} ${h.status||''}</div>`;el.appendChild(d)});document.getElementById('online').textContent=Math.floor(Math.random()*300)+10;document.getElementById('streak').textContent=streak}
+async function updatePred(){const r=await fetchResult();if(r.period!==last){last=r.period;const p=predictLogic(historyData);const el=document.getElementById('prediction');el.textContent=p;el.style.color=p==='BIG'?'#00f0ff':'#ff6b35';historyData.unshift({period:r.period,result:r.result,type:r.type,prediction:p,status:'PENDING'});render()}}
+async function check(){const r=await fetchResult();if(r.period!==last){if(historyData[0]&&historyData[0].status==='PENDING'){const p=historyData[0];p.status=p.prediction===r.type?'WIN':'LOSS';p.status==='WIN'?streak++:streak=0;render()}updatePred()}}
+updatePred();setInterval(check,6000)
+</script>
+</body>
+</html>
